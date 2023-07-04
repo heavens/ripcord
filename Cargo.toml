@@ -1,0 +1,9 @@
+[package]
+name = "ripcord"
+description = "A batteries-includes framework for building the backbone of text editors and applications alike."
+version = "0.1.0"
+authors = ["Mack <https://github.com/heavens>"]
+edition = "2021"
+rust-version = "1.60"
+license-file = "LICENSE"
+readme = "README.md"
