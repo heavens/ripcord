@@ -43,7 +43,7 @@ impl TextNode {
                 .iter()
                 .enumerate()
                 .fold(Vec::new(), |mut acc, (index, code)| {
-                    if *code == b'\n'.into() {
+                    if LineEnding::is_match(*code) {
                         let prev_lf = if acc.is_empty() {
                             0
                         } else {
@@ -240,43 +240,34 @@ pub fn assert_utf8_empty(text: impl AsRef<[u8]>) -> bool {
 #[derive(Default, Debug)]
 pub enum LineEnding {
     #[default]
-    Crlf,
-    Lf,
+    CariageRetLineFeed,
+    LineFeed,
+    ParagraphSep,
+    LineSeparator,
 }
 
 impl LineEnding {
-    pub fn as_utf16(&self) -> [u16; 2] {
-        let _bytes: [u16; 2] = [0u16; 2];
-        let encoded = match self {
-            Self::Crlf => [13u16, 10u16],
-            Self::Lf => [0u16, 10u16],
-        };
-        encoded
-    }
-}
-
-impl ToString for LineEnding {
-    fn to_string(&self) -> String {
+    /// Returns the UTF-16 hex value representation for the [Unicode Character](https://unicode.org/charts/) type.
+    pub fn as_utf16(&self) -> u16 {
         match self {
-            Self::Crlf => "\r\n".into(),
-            Self::Lf => "\n".into(),
+            Self::CariageRetLineFeed => 0x000D,
+            Self::LineFeed => 0x000A,
+            Self::LineSeparator => 0x2028,
+            Self::ParagraphSep => 0x2029,
         }
     }
-}
 
-impl PartialEq for LineEnding {
-    fn eq(&self, other: &Self) -> bool {
-        self.as_utf16().eq(&other.as_utf16())
+    pub fn is_match(code: u16) -> bool {
+        Self::CariageRetLineFeed == code
+            || Self::LineFeed == code
+            || Self::LineSeparator == code
+            || Self::ParagraphSep == code
     }
 }
 
-impl PartialEq<[u16]> for LineEnding {
-    
-    fn eq(&self, other: &[u16]) -> bool {
-        match self {
-            Self::Crlf => other[0] == 13u16 && other[1] == 10u16,
-            Self::Lf => other[1] == 10u16,
-        }
+impl PartialEq<u16> for LineEnding {
+    fn eq(&self, other: &u16) -> bool {
+        self.as_utf16() == *other
     }
 }
 
@@ -290,7 +281,7 @@ mod test {
 
 something interesting.
 ";
-        let node= crate::text::TextNode::new_delimitered(text);
+        let node = crate::text::TextNode::new_delimitered(text);
         let mut buffer = crate::buffer::TextBuffer::new();
         buffer.push(node);
         println!("{}", buffer);
